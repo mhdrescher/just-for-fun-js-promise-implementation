@@ -3,8 +3,8 @@ import { setTimeout } from "node:timers";
 export class MyPromise<T> {
   #PromiseState: "pending" | "fulfilled" | "rejected" = "pending";
   #PromiseResult: T | undefined = undefined;
-  #PromiseFullfillReactions: ((value: T) => T)[] = [];
-  // #PromiseRejectReations: any;
+  #PromiseFullfillReactions: ((value: T) => void)[] = [];
+  #PromiseRejectReactions: ((reason: any) => never)[] = [];
 
   constructor(
     executor: (
@@ -12,27 +12,52 @@ export class MyPromise<T> {
       reject: (reason: any) => void,
     ) => void,
   ) {
-    const onResolve = (value: T) => {
+    const _resolve = (value: T) => {
       queueMicrotask(() => {
         if (this.#PromiseState !== "pending") return;
+
+        if (value instanceof MyPromise) {
+          value.then(_resolve, _reject);
+          return;
+        }
         this.#PromiseResult = value;
         this.#PromiseState = "fulfilled";
         this.#runCallbacks();
       });
     };
-    const onReject = (reason: any) => {
-      if (this.#PromiseState !== "pending") return;
-      this.#PromiseResult = reason;
-      this.#PromiseState = "rejected";
+    const _reject = (reason: any) => {
+      queueMicrotask(() => {
+        if (this.#PromiseState !== "pending") return;
+
+        if (reason instanceof MyPromise) {
+          reason.then(_resolve, _reject);
+          return;
+        }
+        this.#PromiseResult = reason;
+        this.#PromiseState = "rejected";
+        this.#runCallbacks();
+      });
     };
 
-    executor(onResolve, onReject);
+    try {
+      executor(_resolve, _reject);
+    } catch (error) {
+      _reject(error);
+    }
   }
 
   #runCallbacks() {
-    this.#PromiseFullfillReactions.forEach(
-      (reaction) => this.#PromiseResult && reaction(this.#PromiseResult),
-    );
+    if (this.#PromiseState === "fulfilled") {
+      this.#PromiseFullfillReactions.forEach((reaction) =>
+        reaction(this.#PromiseResult),
+      );
+    }
+
+    if (this.#PromiseState === "rejected") {
+      this.#PromiseRejectReactions.forEach((reaction) =>
+        reaction(this.#PromiseResult),
+      );
+    }
   }
 
   // Static methods
@@ -44,10 +69,41 @@ export class MyPromise<T> {
   then(
     onFullfilled?: ((value: T) => T) | null | undefined,
     onRejected?: (reason: any) => never,
-  ) {
-    onFullfilled && this.#PromiseFullfillReactions.push(onFullfilled);
+  ): MyPromise<T> {
+    return new MyPromise<T>((resolve, reject) => {
+      this.#PromiseFullfillReactions.push((result) => {
+        if (!onFullfilled) {
+          resolve(result);
+          return;
+        }
+
+        try {
+          resolve(onFullfilled(result));
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      this.#PromiseRejectReactions.push((reason) => {
+        if (!onRejected) {
+          reject(reason);
+          return;
+        }
+
+        try {
+          reject(onRejected(reason));
+        } catch (error) {
+          reject(reason);
+        }
+      });
+    });
   }
 
-  catch() {}
-  finally() {}
+  catch(onRejected?: (reason: any) => never): MyPromise<T> {
+    return this.then(undefined, onRejected);
+  }
+
+  finally(onFinally: () => void): MyPromise<T> {
+    return this.then(onFinally, onFinally);
+  }
 }
