@@ -10,7 +10,7 @@ export class MyPromise<T> {
       reject: (reason: any) => void,
     ) => void,
   ) {
-    const _resolve = (value: T) => {
+    const _resolve = (value: T) =>
       queueMicrotask(() => {
         if (this.#PromiseState !== "pending") return;
 
@@ -22,8 +22,7 @@ export class MyPromise<T> {
         this.#PromiseState = "fulfilled";
         this.#runCallbacks();
       });
-    };
-    const _reject = (reason: any) => {
+    const _reject = (reason: any) =>
       queueMicrotask(() => {
         if (this.#PromiseState !== "pending") return;
 
@@ -35,7 +34,6 @@ export class MyPromise<T> {
         this.#PromiseState = "rejected";
         this.#runCallbacks();
       });
-    };
 
     try {
       executor(_resolve, _reject);
@@ -101,6 +99,9 @@ export class MyPromise<T> {
           reject(reason);
         }
       });
+
+      // This runs callbacks that can already be run, because they pertained to resolved promises
+      this.#runCallbacks();
     });
   }
 
