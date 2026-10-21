@@ -1,5 +1,3 @@
-import { setTimeout } from "node:timers";
-
 export class MyPromise<T> {
   #PromiseState: "pending" | "fulfilled" | "rejected" = "pending";
   #PromiseResult: T | undefined = undefined;
@@ -91,7 +89,7 @@ export class MyPromise<T> {
         }
 
         try {
-          reject(onRejected(reason));
+          resolve(onRejected(reason)); // Important, don't use reject(...) here
         } catch (error) {
           reject(reason);
         }
