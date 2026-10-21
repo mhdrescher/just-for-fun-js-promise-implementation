@@ -60,7 +60,14 @@ export class MyPromise<T> {
 
   // Static methods
   // DON'T confuse with the functions being passed into the constructor!
-  static resolve<T>(value: T): void {}
+  static resolve<T>(value: T | MyPromise<T>): MyPromise<T> {
+    if (value instanceof MyPromise) return value;
+
+    return new MyPromise<T>((resolve) => {
+      resolve(value);
+    });
+  }
+
   static reject: () => {};
 
   // Instance methods
