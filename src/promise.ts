@@ -94,6 +94,25 @@ export class MyPromise<T> {
     });
   }
 
+  // TODO: Return `AggregatedError` if all promises reject (mdn - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/any)
+  static any<T>(promises: Array<T | MyPromise<T>>): MyPromise<Awaited<T>> {
+    const rejectedReasonMap: any[] = [];
+    let promisesRejected = 0;
+    return new MyPromise<Awaited<T>>((res, rej) => {
+      promises.map((p, i) => {
+        MyPromise.resolve(p)
+          .then((v) => res(v))
+          .catch((r) => {
+            rejectedReasonMap[i] = r;
+            promisesRejected++;
+            if (promisesRejected === promises.length) {
+              rej(rejectedReasonMap);
+            }
+          });
+      });
+    });
+  }
+
   // Instance methods
   then(
     onFullfilled?: ((value: T) => unknown) | null | undefined,
