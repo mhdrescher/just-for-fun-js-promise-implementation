@@ -66,7 +66,13 @@ export class MyPromise<T> {
     });
   }
 
-  static reject: () => {};
+  // MDN states: Unlike Promise.resolve(), Promise.reject() always wraps reason in a new Promise object, even when reason is already a Promise.
+  // see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/reject#description
+  static reject<T>(value: T): MyPromise<T> {
+    return new MyPromise<T>((_resolve, reject) => {
+      reject(value);
+    });
+  }
 
   // Instance methods
   then(
