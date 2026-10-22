@@ -74,6 +74,24 @@ export class MyPromise<T> {
     });
   }
 
+  static all<T>(promises: Array<T | MyPromise<T>>): MyPromise<Awaited<T>[]> {
+    const resolvedValueMap: Awaited<T>[] = [];
+    // To be able to push resolved promises to a specific index of the array,
+    // one needs another place to track how many promises were resolved
+    let promisesResolved = 0;
+    return new MyPromise<Awaited<T>[]>((res, rej) => {
+      promises.map((p, i) =>
+        Promise.resolve(p).then((v) => {
+          resolvedValueMap[i] = v;
+          promisesResolved++;
+          if (promisesResolved === promises.length) {
+            res(resolvedValueMap);
+          }
+        }),
+      );
+    });
+  }
+
   // Instance methods
   then(
     onFullfilled?: ((value: T) => T) | null | undefined,
