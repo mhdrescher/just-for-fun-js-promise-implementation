@@ -113,6 +113,16 @@ export class MyPromise<T> {
     });
   }
 
+  static race<T>(promises: Array<T | MyPromise<T>>): MyPromise<Awaited<T>> {
+    return new MyPromise((res, rej) => {
+      promises.map((p) =>
+        MyPromise.resolve(p)
+          .then((v) => res(v))
+          .catch((r) => rej(r)),
+      );
+    });
+  }
+
   // Instance methods
   then(
     onFullfilled?: ((value: T) => unknown) | null | undefined,
