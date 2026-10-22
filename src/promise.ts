@@ -123,6 +123,37 @@ export class MyPromise<T> {
     });
   }
 
+  static allSettled<T>(
+    promises: Array<T | MyPromise<T>>,
+  ): MyPromise<PromiseSettledResult<T>[]> {
+    const fulfilledPromises: PromiseSettledResult<T>[] = [];
+    let numPromisesResolved = 0;
+
+    return new MyPromise((res) => {
+      promises.map((p, i) =>
+        MyPromise.resolve(p)
+          .then((v) => {
+            fulfilledPromises[i] = {
+              status: "fulfilled",
+              value: v,
+            };
+
+            numPromisesResolved++;
+            if (numPromisesResolved === promises.length) res(fulfilledPromises);
+          })
+          .catch((r) => {
+            fulfilledPromises[i] = {
+              status: "rejected",
+              reason: r,
+            };
+
+            numPromisesResolved++;
+            if (numPromisesResolved === promises.length) res(fulfilledPromises);
+          }),
+      );
+    });
+  }
+
   // Instance methods
   then(
     onFullfilled?: ((value: T) => unknown) | null | undefined,
