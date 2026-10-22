@@ -96,7 +96,7 @@ export class MyPromise<T> {
 
   // Instance methods
   then(
-    onFullfilled?: ((value: T) => T) | null | undefined,
+    onFullfilled?: ((value: T) => unknown) | null | undefined,
     onRejected?: (reason: any) => never,
   ): MyPromise<T> {
     return new MyPromise<T>((resolve, reject) => {
