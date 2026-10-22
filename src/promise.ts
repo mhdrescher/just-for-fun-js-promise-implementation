@@ -81,7 +81,7 @@ export class MyPromise<T> {
     let promisesResolved = 0;
     return new MyPromise<Awaited<T>[]>((res, rej) => {
       promises.map((p, i) =>
-        Promise.resolve(p)
+        MyPromise.resolve(p)
           .then((v) => {
             resolvedValueMap[i] = v;
             promisesResolved++;
